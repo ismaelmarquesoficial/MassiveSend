@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MassiveSend Pro - Modular</title>
+    <title>Disparo em Massa</title>
     
     <!-- Tailwind & Icons -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -22,8 +22,8 @@
                         <i data-lucide="zap" class="w-4 h-4 fill-current"></i>
                     </div>
                     <div id="logo-text" class="nav-label">
-                        <h1 class="font-bold text-base tracking-tight leading-none text-slate-800">Massive<span class="text-indigo-600">Send</span></h1>
-                        <span class="text-[8px] font-bold uppercase tracking-widest text-slate-400">Enterprise</span>
+                        <h1 class="font-bold text-base tracking-tight leading-none text-slate-800">Clinica<span class="text-indigo-600">Vitalis</span></h1>
+                        <span class="text-[8px] font-bold uppercase tracking-widest text-slate-400">Disparo em Massa</span>
                     </div>
                 </div>
             </div>
@@ -39,7 +39,7 @@
                 </button>
                 <button onclick="Router.navigate('status')" id="nav-status" class="nav-btn w-full flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-indigo-600 rounded-lg transition-all group">
                     <i data-lucide="activity" class="w-4 h-4 min-w-[16px]"></i>
-                    <span class="font-semibold text-xs nav-label">Status & Histórico</span>
+                    <span class="font-semibold text-xs nav-label">Campanhas Pendentes</span>
                 </button>
                 <button onclick="Router.navigate('dispatch')" id="nav-dispatch" class="nav-btn w-full flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-indigo-600 rounded-lg transition-all group">
                     <i data-lucide="rocket" class="w-4 h-4 min-w-[16px]"></i>
@@ -51,15 +51,6 @@
                 </button>
             </nav>
 
-            <div id="credits-card" class="p-4 mt-auto nav-label">
-                <div class="bg-indigo-600 rounded-xl p-4 text-white shadow-lg overflow-hidden">
-                    <p class="text-[9px] font-bold opacity-80 uppercase tracking-widest mb-1">Saldo</p>
-                    <p class="text-sm font-bold">12.450 / 50k</p>
-                    <div class="mt-2 w-full bg-white/20 h-1 rounded-full overflow-hidden">
-                        <div class="bg-white h-full" style="width: 24%"></div>
-                    </div>
-                </div>
-            </div>
         </aside>
 
         <!-- Main -->
@@ -92,6 +83,8 @@
     <script src="js/api.js"></script>
     <script src="js/ui.js"></script>
     
+    <script src="js/monitor.js"></script>
+
     <!-- Views Separadas -->
     <script src="js/views/overview.js"></script>
     <script src="js/views/create.js"></script>

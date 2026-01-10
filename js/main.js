@@ -5,102 +5,246 @@
  */
 
 const Router = {
-    activeCampaign: null,
-
-    /**
-     * Gerencia a troca de páginas (Views)
-     */
     async navigate(viewName) {
+        // Desliga o monitor ao sair de qualquer página
+        if (window.ActiveMonitor) ActiveMonitor.stop();
+
         const container = document.getElementById('content-container');
         const title = document.getElementById('view-title');
         const subtitle = document.getElementById('view-subtitle');
         
-        // Atualiza a classe ativa nos botões do menu lateral
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('sidebar-item-active'));
         const activeNav = document.getElementById(`nav-${viewName}`);
         if(activeNav) activeNav.classList.add('sidebar-item-active');
 
-        // Renderização baseada na rota selecionada
         switch(viewName) {
             case 'overview':
                 title.innerText = "Dashboard"; 
-                subtitle.innerText = "Resumo Geral";
-                container.innerHTML = `<div class="flex flex-col items-center p-12 text-slate-400"><span class="loader mb-4"></span>Carregando estatísticas...</div>`;
+                subtitle.innerText = "Monitorização em Tempo Real";
+                container.innerHTML = `<div class="flex flex-col items-center p-12 text-slate-400"><span class="loader mb-4"></span>Sincronizando estatísticas...</div>`;
+                
                 try {
-                    // Busca dados para o Dashboard (Lista Geral e Concluídas)
+                    // Busca inicial de dados estáticos para os cards superiores
                     const [allData, completedData] = await Promise.all([
                         API.listCampaigns(),
                         API.listCompletedCampaigns()
                     ]);
                     
-                    // Conta nomes de campanhas únicos concluídos
                     const completedCount = new Set(completedData.map(c => c.Nome_Campanha || c["nome da campanha"]).filter(Boolean)).size;
                     
-                    // Renderiza a view overview passando os dados e o contador
+                    // Renderiza o esqueleto da página Overview
                     container.innerHTML = Views.overview(allData, completedCount);
+                    
+                    // 2. LIGA O MOTOR DE MONITORIZAÇÃO (Agora que o container existe no DOM)
+                    this.startActiveMonitor();
+
                 } catch (e) {
-                    console.error("Erro no Dashboard:", e);
-                    // Fallback se a API falhar
+                    console.error("Erro ao carregar Dashboard:", e);
                     container.innerHTML = Views.overview([], 0);
                 }
                 break;
-                
+
             case 'create':
-                title.innerText = "Campanha"; 
-                subtitle.innerText = "Configurar Novo Envio";
-                container.innerHTML = `<div class="flex flex-col items-center p-12 text-slate-400"><span class="loader mb-4"></span>Buscando templates...</div>`;
-                try {
-                    const templates = await API.fetchApprovedTemplates();
-                    container.innerHTML = Views.create(templates);
-                    this.handleInputSwitch('csv');
-                } catch (e) {
-                    console.error("Erro ao carregar templates:", e);
-                    UI.showToast("Erro ao carregar templates", "error");
-                    container.innerHTML = Views.create([]);
-                }
+                title.innerText = "Campanha"; subtitle.innerText = "Configurar Envio";
+                const templates = await API.fetchApprovedTemplates();
+                container.innerHTML = Views.create(templates);
+                this.handleInputSwitch('csv');
                 break;
                 
             case 'status':
-                title.innerText = "Histórico"; 
-                subtitle.innerText = "Dados Agrupados por Campanha";
-                container.innerHTML = `<div class="flex flex-col items-center p-12 text-slate-400"><span class="loader mb-4"></span>Buscando registros no n8n...</div>`;
-                try {
-                    const data = await API.listCampaigns();
-                    container.innerHTML = Views.status(data);
-                } catch (e) {
-                    console.error("Erro ao listar campanhas:", e);
-                    container.innerHTML = `<div class="p-8 text-center text-rose-500 font-bold bg-white rounded-2xl border border-rose-100 shadow-sm">Erro ao conectar com o banco de dados.</div>`;
-                }
-                break;
-            
-            case 'templates':
-                title.innerText = "Gestão"; 
-                subtitle.innerText = "Biblioteca de Templates";
-                container.innerHTML = `<div class="flex flex-col items-center p-12 text-slate-400"><span class="loader mb-4"></span>Consultando Meta API...</div>`;
-                try {
-                    const templates = await API.fetchAllTemplates();
-                    container.innerHTML = Views.templates(templates);
-                } catch (e) {
-                    console.error("Erro ao carregar templates:", e);
-                    container.innerHTML = `<div class="p-8 text-center text-rose-500 font-bold bg-white rounded-2xl border border-rose-100">Erro ao carregar biblioteca.</div>`;
-                }
+                title.innerText = "Histórico"; subtitle.innerText = "Relatórios";
+                const dataStatus = await API.listCampaigns();
+                container.innerHTML = Views.status(dataStatus);
                 break;
                 
             case 'dispatch':
-                title.innerText = "Execução"; 
-                subtitle.innerText = "Disparo de Mensagens";
-                container.innerHTML = `<div class="flex flex-col items-center p-12 text-slate-400"><span class="loader mb-4"></span>Carregando filas de envio...</div>`;
-                try {
-                    const data = await API.listCampaigns();
-                    container.innerHTML = Views.dispatch(data);
-                } catch (e) {
-                    console.error("Erro na view de disparo:", e);
-                    container.innerHTML = `<div class="p-8 text-center text-rose-500 font-bold bg-white rounded-2xl border border-rose-100">Erro ao carregar campanhas prontas.</div>`;
-                }
+                title.innerText = "Execução"; subtitle.innerText = "Disparo";
+                const dataDisp = await API.listCampaigns();
+                container.innerHTML = Views.dispatch(dataDisp);
+                break;
+                
+            case 'templates':
+                title.innerText = "Gestão"; subtitle.innerText = "Biblioteca";
+                const temps = await API.fetchAllTemplates();
+                container.innerHTML = Views.templates(temps);
                 break;
         }
         lucide.createIcons();
     },
+
+
+    /**
+     * MOTOR DE MONITORIZAÇÃO (Lógica integrada)
+     */
+    startActiveMonitor() {
+        console.log("🚀 [Main] Iniciando motor de monitorização ativo...");
+        
+        // Executa o primeiro refresh imediatamente
+        this.refreshActiveData();
+        
+        // Agenda a execução a cada 4 segundos
+        this.activeMonitorInterval = setInterval(() => {
+            this.refreshActiveData();
+        }, 4000);
+    },
+
+    stopActiveMonitor() {
+        if (this.activeMonitorInterval) {
+            console.log("🛑 [Main] Parando monitorização ativa...");
+            clearInterval(this.activeMonitorInterval);
+            this.activeMonitorInterval = null;
+        }
+    },
+
+    /**
+     * Lógica de Atualização Visual do Progresso
+     */
+    
+    /**
+     * MOTOR DE MONITORIZAÇÃO INTELIGENTE (RECURSIVO)
+     * Garante que o intervalo de 10s seja respeitado APÓS a resposta da API.
+     */
+    startActiveMonitor() {
+        if (this.isMonitoring) return;
+        this.isMonitoring = true;
+        console.log("🚀 [Main] Motor de monitorização iniciado.");
+        this.refreshActiveLoop();
+    },
+
+    stopActiveMonitor() {
+        this.isMonitoring = false;
+        if (this.activeMonitorTimeout) {
+            clearTimeout(this.activeMonitorTimeout);
+            this.activeMonitorTimeout = null;
+            console.log("🛑 [Main] Motor de monitorização parado.");
+        }
+    },
+
+    /**
+     * Ciclo de atualização sequencial
+     */
+    async refreshActiveLoop() {
+        // Se a monitorização foi desligada ou o container saiu da tela, interrompe o loop
+        const container = document.getElementById('active-monitor-container');
+        if (!this.isMonitoring || !container) {
+            this.stopActiveMonitor();
+            return;
+        }
+
+        // Se a aba estiver escondida, não faz o fetch para economizar quota
+        if (document.hidden) {
+            this.activeMonitorTimeout = setTimeout(() => this.refreshActiveLoop(), 10000);
+            return;
+        }
+
+        // Executa a requisição
+        await this.updateMonitorUI();
+
+        // AGENDA A PRÓXIMA CHAMADA: 
+        // Aqui está o segredo. Só agendamos os 10 segundos DEPOIS que a requisição acima terminou.
+        this.activeMonitorTimeout = setTimeout(() => {
+            this.refreshActiveLoop();
+        }, 10000); // 10 Segundos de intervalo real
+    },
+
+    /**
+     * Atualiza a Interface com os dados ativos
+     */
+    async updateMonitorUI() {
+        try {
+            const activeData = await API.listActiveCampaigns();
+            const monitorContainer = document.getElementById('active-monitor-container');
+            const emptyState = document.getElementById('overview-empty-state');
+
+            if (!monitorContainer) return;
+
+            if (!activeData || activeData.length === 0) {
+                monitorContainer.innerHTML = "";
+                if (emptyState) emptyState.classList.remove('hidden');
+                return;
+            }
+
+            if (emptyState) emptyState.classList.add('hidden');
+
+            // Agrupamento por campanha
+            const campaigns = {};
+            activeData.forEach(item => {
+                const name = item.Nome_Campanha || "Campanha Ativa";
+                if (!campaigns[name]) campaigns[name] = [];
+                campaigns[name].push(item);
+            });
+
+            // Renderização do design compacto e claro solicitado
+            monitorContainer.innerHTML = Object.keys(campaigns).map(name => {
+                const list = campaigns[name];
+                const total = list.length;
+                const completed = list.filter(i => {
+                    const s = (i["Status Envio"] || i.status || "").toLowerCase();
+                    return s.includes("concluido") || s.includes("sucesso") || s.includes("concluído");
+                }).length;
+                const percent = Math.round((completed / total) * 100) || 0;
+
+                return `
+                        <div class="glass-card p-6 rounded-3xl bg-white border border-slate-100 shadow-xl relative overflow-hidden animate-in slide-in-from-bottom-4 duration-500 mb-6">
+                            <div class="absolute -top-20 -right-20 w-48 h-48 bg-indigo-50 blur-[60px] rounded-full"></div>
+                            <div class="relative z-10 space-y-5">
+                                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="flex h-1.5 w-1.5">
+                                                <span class="animate-ping absolute inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400 opacity-75"></span>
+                                                <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                            </span>
+                                            <p class="text-[8px] font-bold text-indigo-500 uppercase tracking-widest">Execução em Tempo Real</p>
+                                        </div>
+                                        <h4 class="text-xl font-black text-slate-800 uppercase tracking-tight">${name}</h4>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="bg-slate-50 px-4 py-1.5 rounded-xl text-center border border-slate-100">
+                                            <p class="text-[7px] font-bold text-slate-400 uppercase">Restam</p>
+                                            <p class="text-sm font-black text-slate-700">${remaining}</p>
+                                        </div>
+                                        <div class="bg-indigo-600 px-4 py-1.5 rounded-xl text-center shadow-lg shadow-indigo-100">
+                                            <p class="text-[7px] font-bold text-indigo-100 uppercase">Total</p>
+                                            <p class="text-sm font-black text-white">${total}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-end px-1">
+                                        <p class="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Progresso</p>
+                                        <p class="text-2xl font-black text-slate-800 tracking-tighter">${percent}%</p>
+                                    </div>
+                                    <div class="relative w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50 p-0.5">
+                                        <div class="h-full bg-gradient-to-r from-indigo-600 via-indigo-400 to-emerald-400 rounded-full transition-all duration-1000 ease-out" style="width: ${percent}%"></div>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-3 pt-2">
+                                        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-center transition-all hover:bg-slate-100/50">
+                                            <p class="text-[7px] font-bold text-slate-400 uppercase mb-0.5">Pendente</p>
+                                            <p class="text-sm font-black text-slate-600">${pending}</p>
+                                        </div>
+                                        <div class="bg-amber-50 p-3 rounded-2xl border border-amber-100 text-center transition-all hover:bg-amber-100/50">
+                                            <p class="text-[7px] font-bold text-amber-500 uppercase mb-0.5">Enviando</p>
+                                            <p class="text-sm font-black text-amber-600">${sending}</p>
+                                        </div>
+                                        <div class="bg-emerald-50 p-3 rounded-2xl border border-emerald-100 text-center transition-all hover:bg-emerald-100/50">
+                                            <p class="text-[7px] font-bold text-emerald-500 uppercase mb-0.5">Sucesso</p>
+                                            <p class="text-sm font-black text-emerald-600">${completed}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+            }).join('');
+            
+            lucide.createIcons();
+        } catch (err) {
+            console.warn("⚠️ Falha na atualização visual do monitor.");
+        }
+    },
+
+
 
     /**
      * LÓGICA DE DISPARO
@@ -241,3 +385,5 @@ const Router = {
 
 // Inicialização da aplicação
 window.onload = () => Router.navigate('overview');
+
+

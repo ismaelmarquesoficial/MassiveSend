@@ -4,9 +4,47 @@
 const Views = {
     overview() {
         return `
-            <div class="p-10 glass-card rounded-3xl text-center">
-                <h3 class="text-xl font-black text-slate-800 mb-2 tracking-tight">Painel MassiveSend Pro</h3>
-                <p class="text-slate-500 max-w-sm mx-auto leading-relaxed">Bem-vindo. Selecione uma opção no menu lateral para gerenciar os disparos.</p>
+            <div class="space-y-8 animate-in fade-in duration-500">
+                <div class="flex justify-between items-end px-2">
+                    <div>
+                        <h3 class="text-2xl font-black text-slate-800 tracking-tight">Visão Geral</h3>
+                        <p class="text-xs text-slate-400 font-medium">Monitoramento de performance e envios ativos</p>
+                    </div>
+                </div>
+
+                <!-- Grid de Cards de Resumo -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="glass-card p-5 rounded-3xl bg-white shadow-sm border border-slate-100">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Total na Base</p>
+                        <p id="stat-total" class="text-2xl font-black text-slate-800">---</p>
+                    </div>
+                    <div class="glass-card p-5 rounded-3xl bg-white shadow-sm border border-slate-100">
+                        <p class="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-2">Sucesso Total</p>
+                        <p id="stat-success" class="text-2xl font-black text-emerald-600">---</p>
+                    </div>
+                    <div class="glass-card p-5 rounded-3xl bg-white shadow-sm border border-slate-100">
+                        <p class="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-2">Campanhas</p>
+                        <p id="stat-campaigns" class="text-2xl font-black text-indigo-600">---</p>
+                    </div>
+                    <div class="glass-card p-5 rounded-3xl bg-white shadow-sm border border-slate-100">
+                        <p class="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-2">Concluídas</p>
+                        <p id="stat-done" class="text-2xl font-black text-slate-800">---</p>
+                    </div>
+                </div>
+
+                <!-- ÁREA DE MONITORAMENTO EM TEMPO REAL -->
+                <div id="active-monitor-container" class="space-y-6">
+                    <!-- O ActiveMonitor.js injetará as barras de progresso aqui -->
+                </div>
+
+                <!-- Estado de espera quando nada está rodando -->
+                <div id="overview-empty-state" class="p-16 text-center glass-card rounded-[2.5rem] border-2 border-dashed border-slate-200">
+                    <div class="w-16 h-16 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="monitor" class="w-8 h-8"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-400 text-sm italic">Nenhum envio ativo detectado</h4>
+                    <p class="text-[10px] text-slate-300 mt-2 uppercase tracking-widest">O monitoramento iniciará automaticamente ao disparar</p>
+                </div>
             </div>
         `;
     },

@@ -29,6 +29,38 @@ const API = {
             return [];
         }
     },
+    async listActiveCampaigns() {
+        try {
+            console.log(`📡 [Monitoramento] Solicitando dados ativos: ${AppConfig.webhooks.active}`);
+            const response = await fetch(AppConfig.webhooks.active);
+            
+            if (!response.ok) {
+                console.warn(`⚠️ Webhook Ativo retornou status ${response.status}.`);
+                return [];
+            }
+
+            // Lemos como texto primeiro para verificar se o n8n enviou conteúdo
+            const text = await response.text();
+            
+            // Se o texto for vazio ou apenas espaços, retornamos array vazio com segurança
+            if (!text || text.trim() === "") {
+                console.log("ℹ️ [Monitoramento] Webhook retornou corpo vazio. Nenhuma campanha ativa.");
+                return [];
+            }
+
+            // Tenta converter para JSON apenas se houver conteúdo
+            try {
+                const data = JSON.parse(text);
+                return Array.isArray(data) ? data : [data];
+            } catch (jsonErr) {
+                console.error("🚨 Erro ao processar JSON do Monitoramento:", jsonErr);
+                return [];
+            }
+        } catch (err) {
+            console.error("🚨 API Error (active): Falha de rede.", err);
+            return [];
+        }
+    },
 
     // Criar Campanha e enviar contatos
     async createCampaign(payload) {
