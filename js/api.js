@@ -20,10 +20,12 @@ const API = {
     // Listar campanhas concluídas
     async listCompletedCampaigns() {
         try {
+            console.log(`📡 [Monitoramento] Solicitando Campanhas concluídos: ${AppConfig.webhooks.completed}`);
             const response = await fetch(AppConfig.webhooks.completed);
             if (!response.ok) throw new Error("Erro ao buscar concluídas");
             const data = await response.json();
             return Array.isArray(data) ? data : [data];
+            
         } catch (err) {
             console.error("🚨 API Error (completed):", err);
             return [];
