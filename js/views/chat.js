@@ -156,7 +156,7 @@ Views.startChatPolling = async function() {
             Views.renderChatMessages(Views.chatState.selectedContact);
         }
     } catch (e) { console.error("🚨 Erro de Polling:", e); }
-    Views.chatState.pollingInterval = setTimeout(() => Views.startChatPolling(), 50000);
+    Views.chatState.pollingInterval = setTimeout(() => Views.startChatPolling(), 500);
 };
 
 // --- RENDERIZAÇÃO DE LISTA ---

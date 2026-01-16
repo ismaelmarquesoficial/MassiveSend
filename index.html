@@ -123,6 +123,33 @@
             </div>
         </main>
     </div>
+     <!-- Modal de Confirmação de Disparo (CORRIGIDO PARA UI.JS) -->
+    <div id="modal-confirm-dispatch" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div class="p-8 text-center space-y-6">
+                <div class="w-20 h-20 bg-rose-50 text-rose-500 rounded-3xl flex items-center justify-center mx-auto shadow-sm">
+                    <i data-lucide="alert-triangle" class="w-10 h-10"></i>
+                </div>
+                
+                <div class="space-y-2">
+                    <h3 class="text-xl font-black text-slate-800 tracking-tight">Confirmar Disparo?</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed px-4">
+                        Você está prestes a iniciar o envio imediato da campanha <strong id="modal-camp-name" class="text-indigo-600"></strong>.<br><br>
+                        <span class="bg-rose-50 text-rose-600 px-2 py-1 rounded-md font-bold uppercase text-[9px]">Atenção:</span> Não será possível pausar ou cancelar esta operação uma vez iniciada.
+                    </p>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <button id="btn-modal-confirm" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-100 transition-all active:scale-95">
+                        Sim, Iniciar Disparo
+                    </button>
+                    <button onclick="UI.closeConfirmDispatch()" class="w-full py-4 bg-slate-50 hover:bg-slate-100 text-slate-400 rounded-2xl font-black text-xs uppercase tracking-widest transition-all">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script>window.Views = {};</script>

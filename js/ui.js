@@ -32,9 +32,14 @@ const UI = {
         const nameDisplay = document.getElementById('modal-camp-name');
         const confirmBtn = document.getElementById('btn-modal-confirm');
 
+        // CORREÇÃO: Verifica se os elementos existem antes de tentar usar
+        if (!modal || !nameDisplay || !confirmBtn) {
+            console.error("Erro: Elementos do modal de confirmação não encontrados no HTML.");
+            return;
+        }
+
         nameDisplay.innerText = campaignName;
         
-        // Remove listeners antigos para evitar duplicação
         const newBtn = confirmBtn.cloneNode(true);
         confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
 
@@ -48,11 +53,12 @@ const UI = {
         lucide.createIcons();
     },
 
-    // Fecha o modal de confirmação de disparo
     closeConfirmDispatch() {
         const modal = document.getElementById('modal-confirm-dispatch');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
     },
 
     // Exibe avisos Toast
