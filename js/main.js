@@ -19,7 +19,6 @@ const Router = {
 
         switch(viewName) {
             case 'overview':
-            case 'status':
                 title.innerText = "Dashboard"; 
                 subtitle.innerText = "Monitorização em Tempo Real";
                 container.innerHTML = `<div class="flex flex-col items-center p-12 text-slate-400"><span class="loader mb-4"></span>Sincronizando estatísticas...</div>`;
@@ -49,9 +48,17 @@ const Router = {
                 break;
                 
             case 'status':
-                title.innerText = "Histórico"; subtitle.innerText = "Relatórios";
-                const dataStatus = await API.listCampaigns();
-                container.innerHTML = Views.status(dataStatus);
+                title.innerText = "Histórico"; 
+                subtitle.innerText = "Relatórios de Campanhas";
+                
+                try {
+                    // Busca dados especificamente para a vista de Status
+                    const dataStatus = await API.listCampaigns();
+                    // Chama a função correta no js/views/status.js
+                    container.innerHTML = Views.status(dataStatus);
+                } catch (e) {
+                    container.innerHTML = `<div class="p-8 text-xs text-slate-400 italic">Erro ao carregar histórico.</div>`;
+                }
                 break;
                 
             case 'dispatch':
@@ -64,6 +71,11 @@ const Router = {
                 title.innerText = "Gestão"; subtitle.innerText = "Biblioteca";
                 const temps = await API.fetchAllTemplates();
                 container.innerHTML = Views.templates(temps);
+                break;
+            case 'chat':
+                title.innerText = "Chat ao Vivo"; 
+                subtitle.innerText = "Monitoramento em Tempo Real";
+                container.innerHTML = Views.chat();
                 break;
         }
         lucide.createIcons();
@@ -125,22 +137,23 @@ const Router = {
      * LÓGICA DE DISPARO
      */
     async handleDispatch(campaignName) {
-        if (!confirm(`Deseja iniciar o disparo imediato para a campanha: ${campaignName}?`)) return;
-
-        UI.showToast(`Iniciando disparo: ${campaignName}...`, 'success');
-        
-        try {
-            console.log(`📤 Enviando comando de disparo para: ${campaignName}`);
-            await API.triggerDispatch(campaignName);
+        // Aciona o modal customizado definido no index.html e controlado pelo ui.js
+        UI.showConfirmDispatch(campaignName, async () => {
+            UI.showToast(`Iniciando disparo: ${campaignName}...`, 'success');
             
-            UI.showToast("Comando de disparo enviado com sucesso!", "success");
-            
-            // Redireciona para o histórico de forma estática
-            setTimeout(() => this.navigate('status'), 1500);
-        } catch (e) {
-            console.error("🚨 Falha crítica no disparo:", e);
-            UI.showToast("Falha ao comunicar disparo. Verifique se o Webhook no n8n está ativo.", "error");
-        }
+            try {
+                console.log(`📤 Enviando comando de disparo para: ${campaignName}`);
+                await API.triggerDispatch(campaignName);
+                
+                UI.showToast("Comando de disparo enviado com sucesso!", "success");
+                
+                // Redireciona para o dashboard (overview) para acompanhar o monitoramento
+                setTimeout(() => this.navigate('overview'), 500);
+            } catch (e) { 
+                console.error("🚨 Falha crítica no disparo:", e);
+                UI.showToast("Falha ao comunicar disparo. Verifique se o Webhook no n8n está ativo.", "error");
+            }
+        });
     },
 
     /**
@@ -242,14 +255,17 @@ const Router = {
             "nome": c.Nome,
             "contato": c.Telefone,
             "nome da campanha": campName,
-            "nome do template": templateValue 
+            "nome do template": templateValue,
+            "tenant_id":"1",
+            "whatsapp_accounts_id":"1",
+            "phone_number_id":"975497088973041"
         }));
 
         try {
             await API.createCampaign(payload);
             UI.showToast("Campanha enviada com sucesso!");
             AppState.contactsQueue = []; // Limpa fila após envio
-            setTimeout(() => this.navigate('status'), 1000);
+            setTimeout(() => this.navigate('dispatch'), 1000);
         } catch (e) {
             UI.showToast("Erro ao conectar com n8n.", "error");
             btn.disabled = false;

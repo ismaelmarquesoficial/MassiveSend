@@ -7,13 +7,26 @@ const API = {
     async listCampaigns() {
         try {
             const response = await fetch(AppConfig.webhooks.list);
-            if (!response.ok) throw new Error("Erro ao buscar dados do n8n");
-            const data = await response.json();
-            AppState.campaignsRaw = Array.isArray(data) ? data : [data];
-            return AppState.campaignsRaw;
+            
+            // Se o status for 204 (No Content) ou a resposta não estiver OK
+            if (response.status === 204 || !response.ok) return [];
+
+            const text = await response.text();
+            
+            // Se o corpo estiver vazio, retornamos lista vazia com segurança
+            if (!text || text.trim() === "" || text === "{}" || text === "[]") {
+                return [];
+            }
+
+            try {
+                const data = JSON.parse(text);
+                return Array.isArray(data) ? data : [data];
+            } catch (jsonErr) {
+                return [];
+            }
         } catch (err) {
             console.error("🚨 API Error (list):", err);
-            throw err;
+            return [];
         }
     },
 
@@ -144,6 +157,42 @@ const API = {
             console.error("🚨 Erro na tentativa de disparo:", err);
             // Mesmo com erro de rede no navegador, o n8n costuma processar o GET.
             return true; 
+        }
+    },
+    /**
+     * Busca as mensagens do banco de dados (Live Chat)
+     */
+    async fetchLiveMessages() {
+        try {
+            // No GET, os parâmetros são passados na URL após a interrogação (?)
+            const tenantId = "1";
+            const accountId = "1";
+            const url = `https://n8n-n8n.g0rat2.easypanel.host/webhook/monitora-msg-banco?tenant_id=${tenantId}&whatsapp_account_id=${accountId}`;
+
+
+            const response = await fetch(url, {
+                method: 'GET'
+                // Removido o Body e o Content-Type, pois não são usados no GET
+            });
+            
+            if (response.status === 204 || !response.ok) return [];
+
+            const text = await response.text();
+            
+            // Proteção contra respostas vazias ou malformadas
+            if (!text || text.trim() === "" || text === "{}" || text === "[]") return [];
+
+            try {
+                const data = JSON.parse(text);
+                // Garante que o retorno seja sempre uma lista
+                return Array.isArray(data) ? data : [data];
+            } catch (jsonErr) {
+                console.warn("⚠️ Erro ao processar JSON do chat:", jsonErr);
+                return [];
+            }
+        } catch (err) {
+            console.error("🚨 API Error (Chat GET):", err);
+            return [];
         }
     }
 };

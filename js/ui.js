@@ -26,6 +26,35 @@ const UI = {
         lucide.createIcons();
     },
 
+    // Abre o modal de confirmação de disparo
+    showConfirmDispatch(campaignName, onConfirm) {
+        const modal = document.getElementById('modal-confirm-dispatch');
+        const nameDisplay = document.getElementById('modal-camp-name');
+        const confirmBtn = document.getElementById('btn-modal-confirm');
+
+        nameDisplay.innerText = campaignName;
+        
+        // Remove listeners antigos para evitar duplicação
+        const newBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+
+        newBtn.onclick = () => {
+            this.closeConfirmDispatch();
+            onConfirm();
+        };
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        lucide.createIcons();
+    },
+
+    // Fecha o modal de confirmação de disparo
+    closeConfirmDispatch() {
+        const modal = document.getElementById('modal-confirm-dispatch');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    },
+
     // Exibe avisos Toast
     showToast(msg, type = 'success') {
         const toast = document.createElement('div');
