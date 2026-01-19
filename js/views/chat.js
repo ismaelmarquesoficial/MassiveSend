@@ -170,7 +170,7 @@ Views.startChatPolling = async function() {
 
     // 🕒 AUMENTADO PARA 3000ms (3 segundos)
     // 50ms era rápido demais e impedia o áudio de carregar
-    Views.chatState.pollingInterval = setTimeout(() => Views.startChatPolling(), 3000);
+    Views.chatState.pollingInterval = setTimeout(() => Views.startChatPolling(), 1000);
 };
 
 // --- RENDERIZAÇÃO DE LISTA ---
