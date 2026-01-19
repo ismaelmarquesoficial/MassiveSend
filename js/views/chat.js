@@ -144,19 +144,33 @@ Views.handleContactSearch = function(val) {
 // --- ENGINE DE MENSAGENS (POLLING) ---
 Views.startChatPolling = async function() {
     if (!document.getElementById('chat-list-container')) return;
+    
     try {
         const data = await API.fetchLiveMessages();
-        Views.chatState.messages = Array.isArray(data) ? data : (data ? [data] : []);
+        const newMessages = Array.isArray(data) ? data : (data ? [data] : []);
         
-        const badge = document.getElementById('chat-count-badge');
-        if (badge) badge.innerText = Views.chatState.messages.length;
+        // 🚀 AQUI ESTÁ A TRAVA: Só entra se o número de mensagens mudou
+        if (newMessages.length !== Views.chatState.messages.length) {
+            console.log("🆕 Mudança detectada! Atualizando interface...");
+            
+            Views.chatState.messages = newMessages;
+            
+            const badge = document.getElementById('chat-count-badge');
+            if (badge) badge.innerText = Views.chatState.messages.length;
 
-        Views.renderChatList();
-        if (Views.chatState.selectedContact) {
-            Views.renderChatMessages(Views.chatState.selectedContact);
+            // Renderiza a lista lateral e as mensagens apenas quando há novidade
+            Views.renderChatList();
+            if (Views.chatState.selectedContact) {
+                Views.renderChatMessages(Views.chatState.selectedContact);
+            }
         }
-    } catch (e) { console.error("🚨 Erro de Polling:", e); }
-    Views.chatState.pollingInterval = setTimeout(() => Views.startChatPolling(), 500);
+    } catch (e) { 
+        console.error("🚨 Erro de Polling:", e); 
+    }
+
+    // 🕒 AUMENTADO PARA 3000ms (3 segundos)
+    // 50ms era rápido demais e impedia o áudio de carregar
+    Views.chatState.pollingInterval = setTimeout(() => Views.startChatPolling(), 3000);
 };
 
 // --- RENDERIZAÇÃO DE LISTA ---
@@ -297,13 +311,75 @@ Views.renderChatMessages = function(phone) {
             lastDate = dateStr;
         }
 
+        console.log("💬 Renderizando mensagem:", msg);
+        // --- LÓGICA DE PROCESSAMENTO DE CONTEÚDO ---
+        // --- LÓGICA DE PROCESSAMENTO DE CONTEÚDO MULTIMÍDIA ---
+        let messageContent = "";
+
+        if (msg.tipo === 'audio' || msg.tipo === 'voice') {
+            messageContent = `
+                <div class="flex flex-col gap-2 min-w-[240px] p-2">
+                    <audio controls preload="none" class="w-full h-10 ${isOut ? 'invert brightness-200' : ''}">
+                        <source src="${msg.media_url}" type="audio/ogg">
+                        Seu navegador não suporta áudio.
+                    </audio>
+                    <div class="flex items-center gap-2 opacity-50 px-1">
+                        <i data-lucide="mic" class="w-3 h-3 text-indigo-500"></i>
+                        <span class="text-[10px] font-black uppercase">Mensagem de Voz</span>
+                    </div>
+                </div>
+            `;
+        } else if (msg.tipo === 'image' || msg.tipo === 'sticker') {
+            messageContent = `
+                <div class="flex flex-col gap-2">
+                    <img src="${msg.media_url}" alt="Imagem" 
+                         onclick="window.open(this.src, '_blank')"
+                         class="rounded-[1rem] max-w-full md:max-w-xs cursor-pointer hover:opacity-90 transition-opacity shadow-sm border border-slate-100">
+                    ${msg.tipo === 'sticker' ? '<span class="text-[9px] font-black opacity-30 uppercase ml-2 tracking-tighter">Figurinha</span>' : ''}
+                </div>
+            `;
+        } else if (msg.tipo === 'video') {
+            messageContent = `
+                <div class="flex flex-col gap-2 min-w-[200px]">
+                    <video controls class="rounded-[1rem] max-w-full md:max-w-xs shadow-sm border border-slate-100">
+                        <source src="${msg.media_url}" type="video/mp4">
+                        Seu navegador não suporta vídeo.
+                    </video>
+                    <span class="text-[9px] font-black opacity-30 uppercase ml-2 tracking-tighter italic">Vídeo</span>
+                </div>
+            `;
+        } else if (msg.tipo === 'document') {
+            messageContent = `
+                <a href="${msg.media_url}" target="_blank" 
+                   class="flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-all group no-underline">
+                    <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                        <i data-lucide="file-text" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-sm font-bold text-slate-700 truncate">${msg.arquivo_nome || 'Baixar Arquivo'}</p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Documento</p>
+                    </div>
+                </a>
+            `;
+        } else if (msg.tipo === 'button') {
+            messageContent = `
+                <div class="flex flex-col gap-1">
+                    <span class="text-inherit">${msg.mensagem.replace(/\n/g, '<br>')}</span>
+                    <span class="text-[9px] uppercase font-black opacity-50 tracking-tighter mt-1">🔘 Resposta de Botão</span>
+                </div>
+            `;
+        } else {
+            // Texto Normal
+            messageContent = msg.mensagem ? msg.mensagem.replace(/\n/g, '<br>') : '<span class="italic opacity-50">Mídia Recebida</span>';
+        }
+
         html += `
             <div class="flex ${isOut ? 'justify-end' : 'justify-start'} animate-in duration-300 w-full mb-4">
                 <div class="max-w-[85%] md:max-w-[70%] flex flex-col ${isOut ? 'items-end' : 'items-start'} min-w-0">
                     <div class="px-6 py-4 rounded-[1.5rem] shadow-sm text-base font-medium leading-relaxed break-words overflow-hidden w-full ${
                         isOut ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
                     }">
-                        ${msg.mensagem ? msg.mensagem.replace(/\n/g, '<br>') : 'Mídia Recibida'}
+                        ${messageContent}
                     </div>
                     <div class="flex items-center gap-2 mt-2 px-1 shrink-0">
                         <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest">${time}</span>

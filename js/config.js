@@ -8,7 +8,7 @@ const AppConfig = {
         templates: "https://n8n-n8n.g0rat2.easypanel.host/webhook/consultar-template",
         dispatch: "https://n8n-n8n.g0rat2.easypanel.host/webhook/disparar_camapanha",
         active: "https://n8n-n8n.g0rat2.easypanel.host/webhook/listar-campanhas-ativa",
-        completed: "https://n8n-n8n.g0rat2.easypanel.host/webhook/listar-campanhas-concluida"
+        completed: "https://n8n-n8n.g0rat2.easypanel.host/webhook/listar-campanhas-concluidas"
     }
 };
 

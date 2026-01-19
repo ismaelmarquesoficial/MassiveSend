@@ -46,3 +46,18 @@ html, body {
 
 /* Classes de utilidade para estados ativos */
 .tab-active { border-bottom: 2px solid #4f46e5; color: #4f46e5; }
+
+/* No seu arquivo CSS */
+.audio-wrapper {
+    min-width: 200px;
+    padding: 10px;
+}
+
+audio {
+    width: 100%;
+    height: 30px; /* Deixa o player mais fino e elegante */
+}
+
+.msg-inbound audio {
+    filter: sepia(20%) saturate(70%) grayscale(1); /* Estiliza para combinar com a marca */
+}
